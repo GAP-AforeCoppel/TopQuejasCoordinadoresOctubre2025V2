@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Quejas</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Carga de Plugin de Datalabels -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+
+        <!-- Título Principal -->
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-8 text-white">
+            Top Quejas Octubre 2025
+        </h1>
+
+        <!-- Tarjetas de Resumen -->
+        <div class="grid grid-cols-1 gap-6 mb-8">
+            <div class="bg-gray-800 shadow-lg rounded-2xl p-6 flex flex-col items-center justify-center w-full">
+                <h2 class="text-lg font-semibold text-gray-400 mb-2">Total de Quejas</h2>
+                <span class="text-5xl font-bold text-blue-400">48</span>
+            </div>
+        </div>
+
+        <!-- Contenedor de Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Gráfico 1: Top Coordinadores -->
+            <div class="bg-gray-800 shadow-lg rounded-2xl p-6 lg:col-span-1">
+                <h2 class="text-xl font-bold mb-4 text-center">Top Quejas por Coordinador</h2>
+                <!-- Altura aumentada para mostrar todos los coordinadores -->
+                <div class="h-[1000px]">
+                    <canvas id="coordinadoresChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Columna Derecha (Contenedor para Regiones y Divisiones) -->
+            <div class="lg:col-span-1 flex flex-col gap-6">
+            
+                <!-- Gráfico 2: Top Regiones -->
+                <div class="bg-gray-800 shadow-lg rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-4 text-center">Top Quejas por Regiones</h2>
+                    <!-- Altura ajustada para el nuevo layout -->
+                    <div class="h-[600px]">
+                        <canvas id="regionesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 3: Divisiones (Movido abajo y expandido) -->
+                <div class="bg-gray-800 shadow-lg rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-4 text-center">Distribución por División</h2>
+                    <!-- Contenedor centrado y con altura definida -->
+                    <div class="h-96 max-w-lg mx-auto">
+                        <canvas id="divisionesChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Gráfico 4: Motivos de Quejas (Añadido) -->
+        <div class="bg-gray-800 shadow-lg rounded-2xl p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4 text-center">Top Motivos de Quejas</h2>
+            <!-- Altura definida para 12 motivos -->
+            <div class="h-[600px]">
+                <canvas id="motivosChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Registrar plugins de Chart.js ---
+            // Registramos el plugin de datalabels globalmente
+            Chart.register(ChartDataLabels);
+
+            // --- Datos Extraídos de la Imagen ---
+
+            // 1. Datos de Coordinadores (Todos los 27)
+            const coordinadoresData = {
+                labels: [
+                    'Guillermina Garcia Alta',
+                    'Adrian Hernandez Jarquin',
+                    'Sonia Veronica Aquino Reaño',
+                    'Angel Amir Espinoza Contreras',
+                    'Silvia Yareth Cholico Herrera',
+                    'Eric Jesus Nuñez Guzman',
+                    'Jahaziel Edibaldo Avalos Campos',
+                    'Rocio Itzel Lozano Moreno',
+                    'Alicia Barradas Espejo',
+                    'Sergio Alberto Nava Macias',
+                    'Daneri Alonso Mondragon Guillen',
+                    'Jose de Jesus Diaz Cruz',
+                    'Karissa Ivet Pérez Hernández',
+                    'Yohali Barrera Guadalupe',
+                    'Genaro Villanueva Perezhuecta',
+                    'Ana Lilia Rodriguez Gomez',
+                    'Guadalupe Lizeth Rojas Alonso',
+                    'Karla Maria Hernandez Quintero',
+                    'Ana Cecilia Priego de Dios',
+                    'Luis Alberto Chacon Altuzar',
+                    'Viviana Pereida Gonzalez',
+                    'Marco Antonio Duran Barajas',
+                    'Vacante',
+                    'Melquiades Ordoñez Rodriguez',
+                    'Nadia Elena González Lopez',
+                    'Jose Luis Feria Flores',
+                    'Jose Rito Flores Berrelleza'
+                ],
+                quejas: [
+                    3, 3, 3, 3, 3, 3, 3, // 7 con 3 quejas
+                    2, 2, 2, 2, 2,       // 5 con 2 quejas
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 // 15 con 1 queja
+                ]
+            };
+
+            // 2. Datos de Regiones (Todas las 14)
+            const regionesData = {
+                labels: [
+                    'Gomez Palacio',
+                    'Guadalajara',
+                    'Oaxaca',
+                    'Cuautitlan Izcalli',
+                    'Monterrey',
+                    'Veracruz',
+                    'Merida',
+                    'Mexicali',
+                    'Azcapotzalco',
+                    'Iztapalapa',
+                    'TECAMAC',
+                    'Aguascalientes',
+                    'Ciudad Juarez',
+                    'Puebla'
+                ],
+                quejas: [6, 6, 5, 4, 4, 4, 4, 3, 3, 3, 2, 2, 1, 1]
+            };
+
+            // 3. Datos de Divisiones
+            const divisionesData = {
+                labels: ['División 1', 'División 2', 'División 3'],
+                quejas: [12, 17, 19]
+            };
+
+            // 4. Datos de Motivos de Quejas (Nuevos)
+            const motivosData = {
+                labels: [
+                    'No pude hacer el trámite y tardé mucho tiempo en que me atendieran',
+                    'Percibí una mala actitud en la atención',
+                    'No pude hacer el trámite, porque me condicionaron contar con cita',
+                    'No pude hacer el trámite, porque no me respetaron mi cita',
+                    'No pude hacer el trámite, por horarios limitados',
+                    'No pude hacer el trámite, por ausencia de personal',
+                    'No pude hacer el trámite',
+                    'Realicé el trámite, pero percibí falta de conocimiento de quien me atendió',
+                    'Realicé el trámite, pero con mala actitud en la atención',
+                    'La cita que me generaron es muy lejana al día de hoy',
+                    'Realicé el trámite, pero tardé mucho tiempo en hacerlo',
+                    'Otros'
+                ],
+                quejas: [9, 9, 7, 6, 5, 5, 2, 1, 1, 1, 1, 1]
+            };
+
+            // --- Configuración de Estilos Comunes para Gráficos ---
+            Chart.defaults.color = '#a0aec0'; // Color de texto por defecto (gris claro)
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'; // Color de las rejillas
+
+            // --- Gráfico 1: Coordinadores (Barras Horizontales) ---
+            const ctxCoordinadores = document.getElementById('coordinadoresChart').getContext('2d');
+            new Chart(ctxCoordinadores, {
+                type: 'bar',
+                data: {
+                    labels: coordinadoresData.labels,
+                    datasets: [{
+                        label: 'Número de Quejas',
+                        data: coordinadoresData.quejas,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Hace el gráfico horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#e2e8f0',
+                                stepSize: 1 // Asegura que los pasos sean de 1 en 1
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
+                        }
+                    }
+                }
+            });
+
+            // --- Gráfico 2: Regiones (Barras Verticales) ---
+            const ctxRegiones = document.getElementById('regionesChart').getContext('2d');
+            new Chart(ctxRegiones, {
+                type: 'bar', // Gráfico de barras verticales
+                data: {
+                    labels: regionesData.labels,
+                    datasets: [{
+                        label: 'Número de Quejas',
+                        data: regionesData.quejas,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // Verde
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { // Eje Y (vertical)
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#e2e8f0',
+                                stepSize: 1 // Pasos de 1 en 1
+                            }
+                        },
+                        x: { // Eje X (horizontal)
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#e2e8f0',
+                                maxRotation: 90, // Rotar etiquetas si son largas
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
+                        }
+                    }
+                }
+            });
+
+            // --- Gráfico 3: Divisiones (Dona) ---
+            const ctxDivisiones = document.getElementById('divisionesChart').getContext('2d');
+            new Chart(ctxDivisiones, {
+                type: 'doughnut',
+                data: {
+                    labels: divisionesData.labels,
+                    datasets: [{
+                        label: 'Quejas',
+                        data: divisionesData.quejas,
+                        backgroundColor: [
+                            'rgba(129, 140, 248, 0.7)', // Indigo
+                            'rgba(248, 113, 113, 0.7)', // Rojo
+                            'rgba(251, 191, 36, 0.7)'  // Amarillo
+                        ],
+                        borderColor: [
+                            'rgba(129, 140, 248, 1)',
+                            'rgba(248, 113, 113, 1)',
+                            'rgba(251, 191, 36, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom', // Leyenda abajo
+                            labels: {
+                                color: '#e2e8f0',
+                                usePointStyle: true,
+                                boxWidth: 8
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
+                        },
+                        // Configuración para mostrar los números DENTRO del gráfico
+                        datalabels: {
+                            color: '#ffffff', // Color del texto
+                            font: {
+                                weight: 'bold',
+                                size: 14
+                            },
+                            formatter: (value) => {
+                                return value; // Muestra el valor numérico
+                            }
+                        }
+                    }
+                }
+            });
+
+
+            // --- Gráfico 4: Motivos (Barras Horizontales) ---
+            const ctxMotivos = document.getElementById('motivosChart').getContext('2d');
+            new Chart(ctxMotivos, {
+                type: 'bar',
+                data: {
+                    labels: motivosData.labels,
+                    datasets: [{
+                        label: 'Número de Quejas',
+                        data: motivosData.quejas,
+                        backgroundColor: 'rgba(139, 92, 246, 0.7)', // Morado
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Hace el gráfico horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#e2e8f0',
+                                stepSize: 1 // Pasos de 1 en 1
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
+                        }
+                    }
+                }
+            });
+
+        });
+    </script>
+
+</body>
+</html>
